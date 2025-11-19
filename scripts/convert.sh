@@ -9,8 +9,8 @@
 set -e
 
 # ============ Configuration Variables ============
-DATA_DIR="${DATA_DIR:-"your_path_to_dataset"}"
-HF_LEROBOT_HOME="${HF_LEROBOT_HOME:-"./lerobot_dataset"}"
+DATA_DIR="${DATA_DIR:-"/your/path/to/rlds"}"
+HF_LEROBOT_HOME="${HF_LEROBOT_HOME:-"/your/path/to/hf_lerobot_data"}"
 PUSH_TO_HUB="${PUSH_TO_HUB:-false}"
 # ================================
 

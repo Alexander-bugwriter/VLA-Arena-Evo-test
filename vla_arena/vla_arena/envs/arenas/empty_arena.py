@@ -1,4 +1,4 @@
-from robosuite.models.arenas import Arena
+from vla_arena.vla_arena.envs.arenas import Arena
 from robosuite.utils.mjcf_utils import xml_path_completion
 
 from vla_arena.vla_arena.envs.arenas.style import get_texture_filename

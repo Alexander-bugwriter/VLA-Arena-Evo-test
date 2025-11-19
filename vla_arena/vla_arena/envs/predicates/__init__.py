@@ -25,9 +25,10 @@ VALIDATE_PREDICATE_FN_DICT = {
     "checkgrippercontact": CheckGripperContact(),
     "checkgrippercontactpart": CheckGripperContactPart(),
     "checkgripperdistance": CheckGripperDistance(),
+    "checkgripperdistancepart": CheckGripperDistancePart(),
 }
 
-TEMPORAL_PREDICATE_FN_LIST = ["incontact", "on", "up", "stack", "checkforce", "incontactpart", "checkdistance", "checkgrippercontact", "checkgrippercontactpart","checkgripperdistance"]
+TEMPORAL_PREDICATE_FN_LIST = ["incontact", "on", "up", "stack", "checkforce", "incontactpart", "checkdistance", "checkgrippercontact", "checkgrippercontactpart","checkgripperdistance","checkgripperdistancepart"]
 
 def update_predicate_fn_dict(fn_key, fn_name):
     VALIDATE_PREDICATE_FN_DICT.update({fn_key: eval(fn_name)()})

@@ -49,6 +49,7 @@ import tqdm
 from vla_arena.vla_arena import benchmark
 from vla_arena.vla_arena import get_vla_arena_path
 from vla_arena.vla_arena.envs import OffScreenRenderEnv
+from pathlib import Path
 
 
 IMAGE_RESOLUTION = 256
@@ -286,11 +287,11 @@ def process_task_without_balancing(task, task_id, task_level, level_raw_dir, env
         task_stats['total_demos'] += 1
         
         # Check gripper transitions
-        num_transitions = count_gripper_transitions(orig_actions)
-        if num_transitions > 2:
-            print(f'  Demo_{i}: FILTERED (has {num_transitions} transitions, need exactly 2)')
-            task_stats['demos_filtered_transitions'] += 1
-            continue
+        # num_transitions = count_gripper_transitions(orig_actions)
+        # if num_transitions > 2:
+        #     print(f'  Demo_{i}: FILTERED (has {num_transitions} transitions, need exactly 2)')
+        #     task_stats['demos_filtered_transitions'] += 1
+        #     continue
         
         print(f'  Processing demo_{i} (2 gripper transitions)')
         
@@ -334,14 +335,91 @@ def process_task_without_balancing(task, task_id, task_level, level_raw_dir, env
     
     return successful_demos, task_stats
 
+def process_single_task(task, env, orig_data):
+    """
+    Process a single task without balancing - keep all successful demonstrations.
+    
+    Returns:
+        - successful_demos: Dictionary of successful demonstrations
+        - task_stats: Statistics about the task processing
+    """
+    task_stats = {
+        'total_demos': 0,
+        'demos_filtered_transitions': 0,  # Demos with != 2 gripper transitions
+        'demos_filtered_failed': 0,       # Demos that failed after all noop strategies
+        'final_success': 0,
+        'warning_issued': False,
+        'noop_strategy_distribution': {0: 0, 4: 0, 8: 0, 12: 0, 16: 0}  # Track which strategies worked
+    }
+    
+    successful_demos = {}
+    
+    # Process all original demonstrations
+    print(f"\n--- Processing task: {task} ---")
+    for i in range(len(orig_data.keys())):
+        demo_data = orig_data[f"demo_{i}"]
+        orig_actions = demo_data["actions"][()]
+        orig_states = demo_data["states"][()]
+        
+        task_stats['total_demos'] += 1
+        
+        # Check gripper transitions
+        # num_transitions = count_gripper_transitions(orig_actions)
+        # if num_transitions > 2:
+        #     print(f'  Demo_{i}: FILTERED (has {num_transitions} transitions, need exactly 2)')
+        #     task_stats['demos_filtered_transitions'] += 1
+        #     continue
+        
+        print(f'  Processing demo_{i} (2 gripper transitions)')
+        
+        # Try progressive noop retention
+        filtered_actions, success, noops_kept, replay_data = preprocess_actions_with_progressive_noops(
+            orig_actions, env, orig_states[0]
+        )
+        
+        if success:
+            successful_demos[f"demo_{i}"] = {
+                'data': replay_data,
+                'original_actions': orig_actions,
+                'processed_actions': filtered_actions,
+                'initial_state': orig_states[0],
+                'actions_removed': len(orig_actions) - len(filtered_actions),
+                'noops_kept_after_transitions': noops_kept
+            }
+            task_stats['noop_strategy_distribution'][noops_kept] += 1
+            print(f'    Demo_{i}: SUCCESS (kept {noops_kept} noops after transitions)')
+        else:
+            task_stats['demos_filtered_failed'] += 1
+            print(f'    Demo_{i}: FAILED (filtered out after trying all strategies)')
+    
+    task_stats['final_success'] = len(successful_demos)
+    
+    success_count = len(successful_demos)
+    print(f"\nFinal success count for {task}: {success_count}")
+    print(f"  - Filtered for wrong transition count: {task_stats['demos_filtered_transitions']}")
+    print(f"  - Filtered for failure after all strategies: {task_stats['demos_filtered_failed']}")
+    print(f"  - Noop strategy distribution: {task_stats['noop_strategy_distribution']}")
+    
+    # Check if we have too few successful demos and issue warning
+    if success_count < MIN_DEMOS_WARNING_THRESHOLD:
+        task_stats['warning_issued'] = True
+        print(f"\n⚠️  WARNING: Task '{task}' has only {success_count} successful demonstrations!")
+        print(f"⚠️  This is below the minimum threshold of {MIN_DEMOS_WARNING_THRESHOLD}.")
+        print(f"⚠️  Consider collecting more demonstrations for this task.")
+    
+    
+    return successful_demos, task_stats
+
 
 def process_level(task_suite, task_level, args, metainfo_json_dict):
     """Process a single task level and return updated metainfo and statistics."""
     print(f"\n{'='*60}")
     print(f"Processing Level {task_level}")
     print(f"{'='*60}")
-    
-    num_tasks_in_suite = 5
+    if task_suite.name.lower() == "long_horizon" and task_level == 0:
+        num_tasks_in_suite = 10
+    else:
+        num_tasks_in_suite = 5
     
     # Statistics for this level
     level_stats = {
@@ -494,7 +572,10 @@ def process_level(task_suite, task_level, args, metainfo_json_dict):
 
 
 def main(args):
-    print(f"Regenerating {args.task_suite} dataset for levels: {args.task_levels}")
+    if (args.task_suite or args.task_levels) and not (args.task_suite and args.task_levels):
+        raise ValueError("Both --task_suite and --task_levels should be provided for regeneration of data on the task suite.")
+    if args.task_suite:
+        print(f"Regenerating {args.task_suite} dataset for levels: {args.task_levels}")
     print(f"Warning threshold: {MIN_DEMOS_WARNING_THRESHOLD} demos")
     print(f"Filtering strategy: Keep demos with exactly 2 gripper transitions")
     print(f"Noop retention: Progressive (4, 8, 12, 16 steps after transitions)")
@@ -516,77 +597,171 @@ def main(args):
     os.makedirs(args.target_dir, exist_ok=True)
 
     # Prepare JSON file to record metadata
-    metainfo_json_out_path = os.path.join(args.target_dir, f"{args.task_suite}_metainfo.json")
+    if args.task_suite:
+        metainfo_json_out_path = os.path.join(args.target_dir, f"{args.task_suite}_metainfo.json")
+    else:
+        metainfo_json_out_path = os.path.join(args.target_dir, "metainfo.json")
     
     metainfo_json_dict = {}
     print(f"Creating new metainfo file at: {metainfo_json_out_path}")
     
     # Add metadata about processing
     metainfo_json_dict["_metadata"] = {
-        "task_suite": args.task_suite,
-        "levels_processed": args.task_levels,
         "min_demos_warning_threshold": MIN_DEMOS_WARNING_THRESHOLD,
         "filtering_strategy": "Keep demos with exactly 2 gripper transitions",
         "noop_retention": "Progressive (4, 8, 12, 16 steps after transitions)",
         "dataset_balancing": "DISABLED - keeps all successful demos",
         "processing_timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
     }
+    if args.task_suite:
+        metainfo_json_dict["_metadata"]["task_suite"] = args.task_suite
+        metainfo_json_dict["_metadata"]["levels_processed"] = args.task_levels
     
     # Save initial metainfo file
     with open(metainfo_json_out_path, "w") as f:
         json.dump(metainfo_json_dict, f, indent=2)
 
-    # Get task suite
-    benchmark_dict = benchmark.get_benchmark_dict()
-    task_suite = benchmark_dict[args.task_suite]()
+    if args.task_suite:
+        # Get task suite
+        benchmark_dict = benchmark.get_benchmark_dict()
+        task_suite = benchmark_dict[args.task_suite]()
 
-    # Overall statistics
-    overall_stats = {
-        'total_levels': len(args.task_levels),
-        'total_tasks': 0,
-        'total_tasks_with_warnings': 0,
-        'total_final_success': 0,
-        'total_demos_filtered_transitions': 0,
-        'total_demos_filtered_failed': 0,
-        'overall_noop_strategy_distribution': {0: 0, 4: 0, 8: 0, 12: 0, 16: 0}
-    }
-    
-    # Process each level
-    for task_level in args.task_levels:
-        try:
-            metainfo_json_dict, level_stats = process_level(
-                task_suite, task_level, args, metainfo_json_dict
-            )
-            
-            # Update overall statistics
-            overall_stats['total_tasks'] += level_stats['num_tasks']
-            overall_stats['total_tasks_with_warnings'] += level_stats['num_tasks_with_warnings']
-            overall_stats['total_final_success'] += level_stats['total_final_success']
-            
-            # Aggregate filtering stats
-            for task_name, task_stats in level_stats['task_specific_stats'].items():
-                overall_stats['total_demos_filtered_transitions'] += task_stats['demos_filtered_transitions']
-                overall_stats['total_demos_filtered_failed'] += task_stats['demos_filtered_failed']
-                for noop_count, count in task_stats['noop_strategy_distribution'].items():
-                    overall_stats['overall_noop_strategy_distribution'][noop_count] += count
-            
-            # Save metainfo after each level (in case of crashes)
-            with open(metainfo_json_out_path, "w") as f:
-                json.dump(metainfo_json_dict, f, indent=2)
+        # Overall statistics
+        overall_stats = {
+            'total_levels': len(args.task_levels),
+            'total_tasks': 0,
+            'total_tasks_with_warnings': 0,
+            'total_final_success': 0,
+            'total_demos_filtered_transitions': 0,
+            'total_demos_filtered_failed': 0,
+            'overall_noop_strategy_distribution': {0: 0, 4: 0, 8: 0, 12: 0, 16: 0}
+        }
+        
+        # Process each level
+        for task_level in args.task_levels:
+            try:
+                metainfo_json_dict, level_stats = process_level(
+                    task_suite, task_level, args, metainfo_json_dict
+                )
                 
-        except Exception as e:
-            import traceback
-            print(f"Error processing level {task_level}: {str(e)}")
-            print("Full traceback:")
-            traceback.print_exc()
-            print("Continuing with next level...")
-            continue
-    
+                # Update overall statistics
+                overall_stats['total_tasks'] += level_stats['num_tasks']
+                overall_stats['total_tasks_with_warnings'] += level_stats['num_tasks_with_warnings']
+                overall_stats['total_final_success'] += level_stats['total_final_success']
+                
+                # Aggregate filtering stats
+                for task_name, task_stats in level_stats['task_specific_stats'].items():
+                    overall_stats['total_demos_filtered_transitions'] += task_stats['demos_filtered_transitions']
+                    overall_stats['total_demos_filtered_failed'] += task_stats['demos_filtered_failed']
+                    for noop_count, count in task_stats['noop_strategy_distribution'].items():
+                        overall_stats['overall_noop_strategy_distribution'][noop_count] += count
+                
+                # Save metainfo after each level (in case of crashes)
+                with open(metainfo_json_out_path, "w") as f:
+                    json.dump(metainfo_json_dict, f, indent=2)
+                    
+            except Exception as e:
+                import traceback
+                print(f"Error processing level {task_level}: {str(e)}")
+                print("Full traceback:")
+                traceback.print_exc()
+                print("Continuing with next level...")
+                continue
+    else:
+        overall_stats = {
+            'total_tasks': 0,
+            'total_tasks_with_warnings': 0,
+            'total_final_success': 0,
+            'total_demos_filtered_transitions': 0,
+            'total_demos_filtered_failed': 0,
+            'overall_noop_strategy_distribution': {0: 0, 4: 0, 8: 0, 12: 0, 16: 0}
+        }
+
+        data_files = list(Path(args.raw_data_dir).glob("*.hdf5")) # Process all HDF5 files in the directory
+        if not data_files:
+            raise ValueError("There are no HDF5 files to process in the directory.")
+        for file in data_files:
+            data_file = h5py.File(file, "r")
+            data = data_file["data"]
+            bddl_path = data.attrs["bddl_file_name"]
+
+            try:
+                env_args = {"bddl_file_name": bddl_path, "camera_heights": IMAGE_RESOLUTION, "camera_widths": IMAGE_RESOLUTION}
+                env = OffScreenRenderEnv(**env_args)
+                task = env.language_instruction
+                camera_names = env.env.camera_names
+                successful_demos, task_states = process_single_task(task, env, data)
+
+                task_data_path = os.path.join(args.target_dir, f"{task.replace(' ', '_')}_demo.hdf5")
+                print(f"\nSaving {len(successful_demos)} demos to: {task_data_path}")
+                
+                with h5py.File(task_data_path, "w") as new_data_file:
+                    grp = new_data_file.create_group("data")
+                    grp.attrs['camera_names'] = camera_names
+                    
+                    for idx, (demo_id, demo_info) in enumerate(successful_demos.items()):
+                        replay_data = demo_info['data']
+                        
+                        # Prepare data for saving
+                        actions = replay_data['actions']
+                        dones = np.zeros(len(actions)).astype(np.uint8)
+                        dones[-1] = 1
+                        rewards = np.zeros(len(actions)).astype(np.uint8)
+                        rewards[-1] = 1
+                        language_instruction = task.encode('utf8')
+                        # language instruction 和 dones 形状保持一致
+                        language_instruction = np.array([language_instruction] * len(actions), dtype='S')
+                        # Save to HDF5
+                        ep_data_grp = grp.create_group(f"demo_{idx}")
+                        
+                        # Save metadata
+                        ep_data_grp.attrs['actions_removed'] = demo_info['actions_removed']
+                        ep_data_grp.attrs['noops_kept_after_transitions'] = demo_info['noops_kept_after_transitions']
+                        
+                        # Save observation data
+                        obs_grp = ep_data_grp.create_group("obs")
+                        obs_grp.create_dataset("gripper_states", data=np.stack(replay_data['gripper_states'], axis=0))
+                        obs_grp.create_dataset("joint_states", data=np.stack(replay_data['joint_states'], axis=0))
+                        obs_grp.create_dataset("ee_states", data=np.stack(replay_data['ee_states'], axis=0))
+                        obs_grp.create_dataset("ee_pos", data=np.stack(replay_data['ee_states'], axis=0)[:, :3])
+                        obs_grp.create_dataset("ee_ori", data=np.stack(replay_data['ee_states'], axis=0)[:, 3:])
+                        for camera in camera_names:
+                            obs_grp.create_dataset(camera + "_rgb", data=np.stack(replay_data[camera + '_images'], axis=0))
+                        
+                        # Save action and state data
+                        ep_data_grp.create_dataset("actions", data=actions)
+                        ep_data_grp.create_dataset("states", data=np.stack(replay_data['states']))
+                        ep_data_grp.create_dataset("robot_states", data=np.stack(replay_data['robot_states'], axis=0))
+                        ep_data_grp.create_dataset("rewards", data=rewards)
+                        ep_data_grp.create_dataset("dones", data=dones)
+                        ep_data_grp.create_dataset("language_instruction", data=language_instruction)
+                        
+                        # Update metainfo
+                        task_key = f"{task.replace(' ', '_')}"
+                        episode_key = f"demo_{idx}"
+                        if task_key not in metainfo_json_dict:
+                            metainfo_json_dict[task_key] = {}
+                        metainfo_json_dict[task_key][episode_key] = {
+                            "success": True,  # All saved demos are successful
+                            "initial_state": demo_info['initial_state'].tolist(),
+                            "actions_removed": demo_info['actions_removed'],
+                            "noops_kept_after_transitions": demo_info['noops_kept_after_transitions']
+                        }
+                data_file.close()
+            except Exception as e:
+                import traceback
+                print(f"Error processing file {file}: {str(e)}")
+                print("Full traceback:")
+                traceback.print_exc()
+                print("Continuing with next level...")
+                continue
+
     # Print overall statistics
     print(f"\n{'='*60}")
     print("OVERALL STATISTICS")
     print(f"{'='*60}")
-    print(f"Total levels processed: {overall_stats['total_levels']}")
+    if args.task_suite:
+        print(f"Total levels processed: {overall_stats['total_levels']}")
     print(f"Total tasks processed: {overall_stats['total_tasks']}")
     print(f"Tasks with warnings (< {MIN_DEMOS_WARNING_THRESHOLD} initial demos): {overall_stats['total_tasks_with_warnings']}")
     print(f"Total successful demos: {overall_stats['total_final_success']}")
@@ -609,10 +784,10 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task_suite", type=str, required=True, help="Name of the task suite (e.g., static_obstacles)")
+    parser.add_argument("--task_suite", type=str, required=False, help="Name of the task suite (e.g., static_obstacles)")
     parser.add_argument("--raw_data_dir", type=str, required=True, help="Path to the raw HDF5 dataset directory")
     parser.add_argument("--target_dir", type=str, required=True, help="Path to the target directory to save the new dataset")
-    parser.add_argument("--task_levels", type=int, nargs='+', required=True, help="List of task levels to process (e.g., 0 1 2)")
+    parser.add_argument("--task_levels", type=int, nargs='+', required=False, help="List of task levels to process (e.g., 0 1 2)")
     args = parser.parse_args()
     
     main(args) 

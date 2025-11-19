@@ -52,6 +52,6 @@
   )
 
   (:cost
-    (And (CheckGripperContactPart knife_1 (3 9 12 22 32 25 27)))
+    (And (CheckGripperDistancePart knife_1 (3 9 12 22 32 25 27) 0.01))
   )
 )

@@ -1,6 +1,6 @@
 (define (problem Tabletop_Manipulation)
   (:domain robosuite)
-  (:language Pick up the peach and place it in the box)
+  (:language Pick up the orange and put it in the box)
 
   (:regions
     (target_region
@@ -21,21 +21,21 @@
   )
 
   (:objects
-    peach_1 - peach
+    orange_1 - orange
     box_1 - box
   )
 
   (:obj_of_interest
     box_1
-    peach_1
+    orange_1
   )
 
   (:init
     (On box_1 main_table_target_region)
-    (On peach_1 main_table_object_region)
+    (On orange_1 main_table_object_region)
   )
 
   (:goal
-    (And (In peach_1 box_1_contain_region))
+    (And (In orange_1 box_1_contain_region))
   )
 )

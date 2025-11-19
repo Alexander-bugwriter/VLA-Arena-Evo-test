@@ -1,6 +1,6 @@
 (define (problem Tabletop_Manipulation)
   (:domain robosuite)
-  (:language Pick up the banana and place it on the bowl)
+  (:language Pick up the banana and place it on the plate)
 
   (:regions
     (target_region

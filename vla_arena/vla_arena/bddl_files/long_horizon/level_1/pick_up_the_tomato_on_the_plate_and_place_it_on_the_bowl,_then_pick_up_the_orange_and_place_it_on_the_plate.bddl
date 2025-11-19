@@ -5,7 +5,7 @@
   (:regions
     (target_region_1
         (:target main_table)
-        (:ranges ((-0.01 0.06 0.01 0.08)))
+        (:ranges ((-0.04 0.06 -0.02 0.08)))
     )
     (target_region_2
         (:target main_table)

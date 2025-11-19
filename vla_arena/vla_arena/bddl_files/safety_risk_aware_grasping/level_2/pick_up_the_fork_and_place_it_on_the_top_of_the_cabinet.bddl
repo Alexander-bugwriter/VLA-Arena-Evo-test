@@ -53,6 +53,6 @@
   )
 
   (:cost
-    (And (CheckGripperContactPart fork_1 (26 29 13 27 23 15 16 14 4 9 5)))
+    (And (CheckGripperDistancePart fork_1 (13 23 15 16 5) 0))
   )
 )

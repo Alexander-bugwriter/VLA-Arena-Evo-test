@@ -200,18 +200,17 @@ class BDDLBaseDomain(SingleArmEnv):
 
         self.bddl_file_name = bddl_file_name
         self.camera_names=camera_names
+        self.camera_configs={camera:[0,0,0] for camera in self.camera_names}
         self.parsed_problem = BDDLUtils.robosuite_parse_problem(self.bddl_file_name)
         if self.parsed_problem["camera_names"]:
             self.camera_names=self.parsed_problem["camera_names"]
-        if "robot0_eye_in_hand" in self.camera_names:
-            self.camera_names.remove("robot0_eye_in_hand")
-        self.camera_names.append("robot0_eye_in_hand")
+            self.camera_configs=self.parsed_problem["camera_configs"]
 
         self.obj_of_interest = self.parsed_problem["obj_of_interest"]
         self.moving_objects = self.parsed_problem["moving_objects"]
         self.image_settings = self.parsed_problem["image_settings"]
         self.noise = self.parsed_problem["noise"]
-
+        self.random_color = self.parsed_problem["random_color"]
         self._assert_problem_name()
 
         self._arena_type = arena_type
@@ -451,7 +450,7 @@ class BDDLBaseDomain(SingleArmEnv):
         # Arena always gets set to zero origin
         mujoco_arena.set_origin([0, 0, 0])
 
-        self._setup_camera(mujoco_arena)
+        self._setup_camera(mujoco_arena,self.camera_names,self.camera_configs)
 
         self._load_custom_material()
 
@@ -466,7 +465,7 @@ class BDDLBaseDomain(SingleArmEnv):
         self._setup_placement_initializer(mujoco_arena)
 
         moving_objects_names = [object['name'] for object in self.moving_objects]
-        xml_processor = make_xml_processor(moving_objects_names)
+        xml_processor = make_xml_processor(moving_objects_names, self.random_color)
         self.set_xml_processor(xml_processor)
 
         self.objects = list(self.objects_dict.values())
@@ -1004,6 +1003,17 @@ class BDDLBaseDomain(SingleArmEnv):
                 # Apply temporal cost shaping if it's a temporal predicate
                 if is_temporal:
                     predicate_cost *= self.temporal_cost_shaping
+                    if self.mocap_joint_names and predicate_cost:
+                        if state[0] == "incontact":
+                            target = state[2] + '_main_mocap'
+                            if target in self.mocap_joint_names:
+                                self.mocap_joint_names.remove(target)
+                                self.mocap_motion_generators.pop(state[2])
+                        elif state[0] == "checkgrippercontact":
+                            target = state[1] + '_main_mocap'
+                            if target in self.mocap_joint_names:
+                                self.mocap_joint_names.remove(target)
+                                self.mocap_motion_generators.pop(state[1])
                 cost += predicate_cost    
         return cost
 
@@ -1024,7 +1034,6 @@ class BDDLBaseDomain(SingleArmEnv):
             # Convert OSC_POSITION action
             action = np.array(action)
             action = np.concatenate((action[:3], action[-1:]), axis=-1)
-        
         self._set_mocap_motion()
         obs, reward, done, info = super().step(action)
         done = self._check_success()
@@ -1151,6 +1160,23 @@ class BDDLBaseDomain(SingleArmEnv):
         g_geoms = [self.robots[0].gripper[self.robots[0].arms[0]]._important_geoms["left_fingerpad"], self.robots[0].gripper[self.robots[0].arms[0]]._important_geoms["right_fingerpad"]]
         gripper_geoms = ['gripper0_right_' + g[0] for g in g_geoms]
         return self.check_distance(object_geoms,gripper_geoms)
+    
+    def check_gripper_distance_part(self,object_1,geom_ids):
+        assert isinstance(geom_ids, list), "geom_ids must be a list of geom ids"
+        geom_1 = object_1.contact_geoms
+        g_geoms = [self.robots[0].gripper[self.robots[0].arms[0]]._important_geoms["left_fingerpad"], self.robots[0].gripper[self.robots[0].arms[0]]._important_geoms["right_fingerpad"]]
+        gripper_geoms = ['gripper0_right_' + g[0] for g in g_geoms]
+        geoms_to_check = []
+        for geom_name in geom_1:
+            if isinstance(geom_name, str):
+                geom_id = str(extract_trailing_int(geom_name))
+                if geom_id is not None and geom_id in geom_ids:
+                    geoms_to_check.append(geom_name)
+            else:
+                raise NotImplementedError(f"Invalid geom_id_1: {geom_name}")
+        dist = self.check_distance(geoms_to_check,gripper_geoms)
+        # print(dist)
+        return dist
 
     def _check_contact(self, sim, geoms_1, geoms_2=None):
         """
@@ -1187,7 +1213,7 @@ class BDDLBaseDomain(SingleArmEnv):
             c2_in_g1 = geom_1_name in geoms_1
             c1_in_g2 = geom_2_name in geoms_2 if geoms_2 is not None else True
             if (c1_in_g1 and c2_in_g2) or (c1_in_g2 and c2_in_g1):
-                # print(geom_2_name)
+                print(geom_2_name)
                 return True
         return False
     
@@ -1281,6 +1307,12 @@ class BDDLBaseDomain(SingleArmEnv):
                     predicate_fn_name,
                     self.object_states_dict[object_1_name],
                     self.object_states_dict[object_2_name],
+                )
+            elif predicate_fn_name == "checkgripperdistancepart":
+                return float(state[3]) >= eval_predicate_fn(
+                    predicate_fn_name,
+                    self.object_states_dict[object_1_name],
+                    state[2],
                 )
             else:
                 return float(state[3]) < eval_predicate_fn(

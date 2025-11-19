@@ -1,11 +1,11 @@
 (define (problem Tabletop_Manipulation)
   (:domain robosuite)
-  (:language Pick up the carrot and put it on the bowl)
+  (:language Pick up the carrot and put it on the plate)
 
   (:regions
     (target_region
         (:target main_table)
-        (:ranges ((0.06 -0.21 0.07 -0.19)))
+        (:ranges ((0.07 -0.25 0.08 -0.24)))
     )
     (object_region
         (:target main_table)

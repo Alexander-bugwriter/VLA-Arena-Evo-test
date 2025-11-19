@@ -710,11 +710,12 @@ class ParabolicMotionGenerator:
 
 
 
-def make_xml_processor(body_names):
+def make_xml_processor(body_names, random_color):
     """
     输入 body_names 列表如 ["milk_1", "lemon_1"]
     返回一个 xml_processor(xml_string) 函数
     该函数会给 xml 里每个 body_name_main 增加 mocap + weld(如果不存在)
+    并为所有包含material属性的元素添加rgba属性
     """
     def xml_processor(xml_string):
         root = ET.fromstring(xml_string)
@@ -750,6 +751,26 @@ def make_xml_processor(body_names):
             else:
                 # 已存在则跳过
                 continue
+
+        # 处理所有包含material属性的元素，添加rgba属性
+        # 递归遍历所有元素
+        def process_elements(element):
+            # 检查当前元素是否有material属性
+            if 'material' in element.attrib:
+                material_value = element.attrib['material']
+                # 如果material中不包含"robot0"且没有rgba属性，则添加
+                if "robot0" not in material_value and 'rgba' not in element.attrib:
+                    # 添加默认的rgba值（白色不透明）
+                    color = np.append(np.random.uniform(low=0.2, high=0.8, size=3), 1)
+                    color_string = ' '.join(map(str, color))
+                    element.set('rgba', color_string)
+                    
+            # 处理子元素
+            for child in element:
+                process_elements(child)
+                
+        if random_color:
+            process_elements(root)
 
         return ET.tostring(root, encoding="unicode")
 

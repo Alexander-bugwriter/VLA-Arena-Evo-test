@@ -105,6 +105,6 @@
   )
 
   (:goal
-    (And (On egg_1 white_cabinet_1_middle_region))
+    (And (In egg_1 white_cabinet_1_middle_region))
   )
 )

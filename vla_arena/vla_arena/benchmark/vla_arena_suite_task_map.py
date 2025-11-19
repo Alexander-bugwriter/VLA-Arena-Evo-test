@@ -160,52 +160,6 @@ vla_arena_task_map = {
             "pick_the_tomato_on_the_table_and_place_it_on_the_bowl",
         ],
     },
-    "robustness_visual_variations": {
-        0: [
-            "pick_up_the_apple_and_place_it_on_the_bowl",
-            "pick_up_the_banana_and_place_it_on_the_plate_on_the_top_of_the_cabinet",
-            "pick_up_the_bell_pepper_and_place_it_on_the_bowl",
-            "pick_up_the_orange_and_place_it_in_the_box",
-            "pick_up_the_tomato_and_place_it_on_the_bowl_on_the_table",
-        ],
-        1: [
-            "pick_up_the_apple_and_place_it_on_the_bowl",
-            "pick_up_the_banana_and_place_it_on_the_plate_on_the_top_of_the_cabinet",
-            "pick_up_the_bell_pepper_and_place_it_on_the_bowl",
-            "pick_up_the_orange_and_place_it_in_the_box",
-            "pick_up_the_tomato_and_place_it_on_the_bowl_on_the_table",
-        ],
-        2: [
-            "pick_up_the_apple_and_place_it_on_the_bowl",
-            "pick_up_the_banana_and_place_it_on_the_plate_on_the_top_of_the_cabinet",
-            "pick_up_the_bell_pepper_and_place_it_on_the_bowl",
-            "pick_up_the_orange_and_place_it_in_the_box",
-            "pick_up_the_tomato_and_place_it_on_the_bowl_on_the_table",
-        ],
-    },
-    "generalization_language_variations": {
-        0: [
-            "pick_up_the_banana_and_place_it_in_the_box",
-            "pick_up_the_bottled_water_and_place_it_in_the_box",
-            "pick_up_the_hot_dog_and_place_it_in_the_box",
-            "pick_up_the_orange_and_place_it_in_the_box",
-            "pick_up_the_tomato_and_place_it_in_the_box",
-        ],
-        1: [
-            "pick_up_the_banana_and_place_it_in_the_box",
-            "pick_up_the_bottled_water_and_place_it_in_the_box",
-            "pick_up_the_hot_dog_and_place_it_in_the_box",
-            "pick_up_the_orange_and_place_it_in_the_box",
-            "pick_up_the_tomato_and_place_it_in_the_box",
-        ],
-        2: [
-            "pick_up_the_banana_and_place_it_in_the_box",
-            "pick_up_the_bottled_water_and_place_it_in_the_box",
-            "pick_up_the_hot_dog_and_place_it_in_the_box",
-            "pick_up_the_orange_and_place_it_in_the_box",
-            "pick_up_the_tomato_and_place_it_in_the_box",
-        ],
-    },
     "generalization_object_preposition_combinations": {
         0: [
             "pick_the_tomato_in_the_top_layer_of_the_drawer_and_place_it_on_the_bowl_between_the_vase_and_the_teapot",
@@ -284,8 +238,7 @@ vla_arena_task_map = {
             "pick_up_the_egg_and_place_it_in_the_box",
             "pick_up_the_lime_and_place_it_in_the_top_layer_of_the_cabinet",
             "pick_up_the_mango_and_place_it_in_the_top_layer_of_the_cabinet",
-            "pick_up_the_orange_and_place_it_in_the_box",
-            "pick_up_the_peach_and_place_it_in_the_box",
+            "pick_up_the_orange_and_put_it_in_the_box",
             "pick_up_the_peach_and_place_it_in_the_top_layer_of_the_cabinet",
             "pick_up_the_strawberry_and_place_it_in_the_box",
         ],
@@ -298,9 +251,7 @@ vla_arena_task_map = {
         ],
         2: [
             "open_the_top_drawer,_then_pick_up_the_mango_on_the_plate_and_put_it_on_the_drawer,_close_the_drawer_at_last",
-            "open_the_top_two_drawers_one_by_one,_put_the_egg_in_the_middle_layer_and_put_the_mango_in_the_top_layer,_and_close_them_afterward",
             "open_the_top_two_drawers_one_by_one,_put_the_strawberry_in_the_middle_layer_and_put_the_mango_in_the_top_layer,_and_close_them_afterward",
-            "pick_up_the_orange_and_the_strawberry_and_the_cucumber_and_place_them_in_the_box",
             "pick_up_the_orange_and_the_tomato_and_the_cucumber_and_place_them_in_the_box",
             "take_out_the_apple_on_the_ceramic_plate,_pick_up_the_carrot_on_the_cutting_board_and_place_it_on_the_plate,_then_pick_up_the_onion_and_place_it_on_the_cutting_board",
             "take_the_mango_out_of_the_drawer_and_pick_up_the_peaches_and_place_it_in_the_drawer,_then_close_the_drawer",

@@ -50,6 +50,6 @@
   )
 
   (:cost
-    (And (CheckGripperContactPart scissors_1 (2 3 13 15 18 9 17)))
+    (And (CheckGripperDistancePart scissors_1 (2 3 13 15 18 9 17) 0.01))
   )
 )

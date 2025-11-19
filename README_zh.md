@@ -4,7 +4,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-%20Apache%202.0-green?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge" alt="Python"></a>
   <a href="https://robosuite.ai/"><img src="https://img.shields.io/badge/framework-RoboSuite-green?style=for-the-badge" alt="Framework"></a>
-  <a href="tasks/"><img src="https://img.shields.io/badge/tasks-150%2B-orange?style=for-the-badge" alt="Tasks"></a>
+  <a href="vla_arena/vla_arena/bddl_files/"><img src="https://img.shields.io/badge/tasks-150%2B-orange?style=for-the-badge" alt="Tasks"></a>
   <a href="docs/"><img src="https://img.shields.io/badge/docs-available-green?style=for-the-badge" alt="Docs"></a>
 </p>
 
@@ -115,25 +115,23 @@ VLA-Arena提供13个专业任务套件，共150+个任务，分为四个主要�
 | `object_state_preservation` | 物体状态保持 | 5 | 5 | 5 | 15 |
 | `dynamic_obstacles` | 动态碰撞避免 | 5 | 5 | 5 | 15 |
 
-### 🔄 鲁棒性（3个套件，45个任务）
+### 🔄 鲁棒性（2个套件，30个任务）
 | 套件 | 重点领域 | L0 | L1 | L2 | 总计 |
 |------|----------|----|----|----|------|
 | `static_distractors` | 杂乱场景操作 | 5 | 5 | 5 | 15 |
-| `visual_variations` | 视觉适应 | 5 | 5 | 5 | 15 |
 | `dynamic_distractors` | 动态场景操作 | 5 | 5 | 5 | 15 |
 
-### 🎯 泛化性（4个套件，60个任务）
+### 🎯 泛化性（3个套件，45个任务）
 | 套件 | 重点领域 | L0 | L1 | L2 | 总计 |
 |------|----------|----|----|----|------|
 | `object_preposition_combinations` | 空间关系理解 | 5 | 5 | 5 | 15 |
-| `language_variations` | 语言变化鲁棒性 | 5 | 5 | 5 | 15 |
 | `task_workflows` | 多步骤任务规划 | 5 | 5 | 5 | 15 |
 | `unseen_objects` | 未见物体识别 | 5 | 5 | 5 | 15 |
 
-### 📈 长时域（1个套件，15个任务）
+### 📈 长时域（1个套件，20个任务）
 | 套件 | 重点领域 | L0 | L1 | L2 | 总计 |
 |------|----------|----|----|----|------|
-| `long_horizon` | 长时域任务规划 | 5 | 5 | 5 | 15 |
+| `long_horizon` | 长时域任务规划 | 10 | 5 | 5 | 20 |
 
 **难度级别：**
 - **L0**：具有明确目标的基础任务

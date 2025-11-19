@@ -1,4 +1,4 @@
-from robosuite.models.arenas import Arena
+from vla_arena.vla_arena.envs.arenas import Arena
 from robosuite.utils.mjcf_utils import xml_path_completion
 import numpy as np
 

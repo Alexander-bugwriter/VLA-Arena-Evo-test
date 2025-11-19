@@ -222,7 +222,7 @@ First, create a new conda environment and install LeRobot-related dependencies:
 
 ```bash
 # Create new conda environment
-conda create -n lerobot_conversion python=3.9
+conda create -n lerobot_conversion python=3.10
 conda activate lerobot_conversion
 
 # Install dependencies

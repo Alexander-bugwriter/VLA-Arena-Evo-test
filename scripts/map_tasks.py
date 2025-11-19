@@ -24,8 +24,6 @@ def scan_bddl_files_and_generate_dict(base_path="./vla_arena/vla_arena/bddl_file
         "safety_static_obstacles": "safety_static_obstacles",
         "robustness_dynamic_distractors": "robustness_dynamic_distractors",
         "robustness_static_distractors": "robustness_static_distractors",
-        "robustness_visual_variations": "robustness_visual_variations",
-        "generalization_language_variations": "generalization_language_variations",
         "generalization_object_preposition_combinations": "generalization_object_preposition_combinations",
         "generalization_task_workflows": "generalization_task_workflows",
         "generalization_unseen_objects": "generalization_unseen_objects",

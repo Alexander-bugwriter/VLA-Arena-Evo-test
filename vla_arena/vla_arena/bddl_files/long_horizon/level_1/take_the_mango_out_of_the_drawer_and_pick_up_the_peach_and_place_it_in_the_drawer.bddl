@@ -14,6 +14,10 @@
     (top_region
         (:target white_cabinet_1)
     )
+    (table_region
+        (:target main_table)
+        (:ranges ((-1 -1 1 1)))
+    )
   )
 
   (:fixtures
@@ -40,7 +44,6 @@
   )
 
   (:goal
-    (And (In peach_1 white_cabinet_1_top_region))
-    (Not (In mango_1 white_cabinet_1_top_region))
+    (And (In peach_1 white_cabinet_1_top_region) (On mango_1 main_table_table_region))
   )
 )

@@ -153,6 +153,8 @@ def robosuite_parse_problem(problem_filename):
         moving_objects = []
         camera_names=[]
         noise=[]
+        camera_configs={}
+        random_color=False
         while tokens:
             group = tokens.pop()
             t = group[0]
@@ -220,7 +222,13 @@ def robosuite_parse_problem(problem_filename):
             elif t == ":camera":
                 group.pop(0)
                 while group:
-                    camera_names.append(group.pop(0))
+                    camera = group.pop(0)
+                    camera_names.append(camera)
+                    if group and (not group[0].isalpha()):
+                        camera_configs[camera] = list(map(float, group[:3]))
+                        group = group[3:]
+                    else:
+                        camera_configs[camera] = [0, 0, 0]
             elif t == ":noise":
                 group.pop(0)
                 if group[0]=="gaussian":
@@ -230,8 +238,15 @@ def robosuite_parse_problem(problem_filename):
                 elif group[0]=="salt_pepper":
                     noise.append(group.pop(0))
                     noise.append(float(group.pop(0)))
+            elif t == ":random_color":
+                group.pop(0)
+                random_color = eval(group.pop(0).capitalize())
             else:
                 print("%s is not recognized in problem" % t)
+        
+        if camera_names and camera_names[-1]!="robot0_eye_in_hand":
+            camera_names.append("robot0_eye_in_hand")
+            camera_configs["robot0_eye_in_hand"] = [0,0,0]
         return {
             "problem_name": problem_name,
             "fixtures": fixtures,
@@ -247,6 +262,8 @@ def robosuite_parse_problem(problem_filename):
             "image_settings": image_settings,
             "camera_names": camera_names,
             "noise": noise,
+            "camera_configs": camera_configs,
+            "random_color": random_color,
         }
     else:
         raise Exception(

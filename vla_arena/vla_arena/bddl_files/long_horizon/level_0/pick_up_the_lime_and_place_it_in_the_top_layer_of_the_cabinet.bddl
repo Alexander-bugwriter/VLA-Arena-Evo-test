@@ -22,7 +22,7 @@
   )
 
   (:objects
-    mango_1 - mango
+    lime_1 - lime
   )
 
   (:obj_of_interest
@@ -31,11 +31,11 @@
 
   (:init
     (On white_cabinet_1 main_table_target_region)
-    (On mango_1 main_table_object_region)
+    (On lime_1 main_table_object_region)
     (Open white_cabinet_1_top_region)
   )
 
   (:goal
-    (And (In mango_1 white_cabinet_1_top_region))
+    (And (In lime_1 white_cabinet_1_top_region))
   )
 )

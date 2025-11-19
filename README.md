@@ -4,7 +4,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-%20Apache%202.0-green?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge" alt="Python"></a>
   <a href="https://robosuite.ai/"><img src="https://img.shields.io/badge/framework-RoboSuite-green?style=for-the-badge" alt="Framework"></a>
-  <a href="tasks/"><img src="https://img.shields.io/badge/tasks-150%2B-orange?style=for-the-badge" alt="Tasks"></a>
+  <a href="vla_arena/vla_arena/bddl_files/"><img src="https://img.shields.io/badge/tasks-150%2B-orange?style=for-the-badge" alt="Tasks"></a>
   <a href="docs/"><img src="https://img.shields.io/badge/docs-available-green?style=for-the-badge" alt="Docs"></a>
 </p>
 
@@ -99,7 +99,7 @@ For detailed instructions, see our [Documentation](#documentation) section.
 
 ## Task Suites Overview
 
-VLA-Arena provides 13 specialized task suites with 150+ tasks total, organized into four domains:
+VLA-Arena provides 11 specialized task suites with 150+ tasks total, organized into four domains:
 
 ### 🛡️ Safety (5 suites, 75 tasks)
 | Suite | Description | L0 | L1 | L2 | Total |
@@ -110,25 +110,23 @@ VLA-Arena provides 13 specialized task suites with 150+ tasks total, organized i
 | `object_state_preservation` | Object state preservation | 5 | 5 | 5 | 15 |
 | `dynamic_obstacles` | Dynamic collision avoidance | 5 | 5 | 5 | 15 |
 
-### 🔄 Robustness (3 suites, 45 tasks)
+### 🔄 Robustness (2 suites, 30 tasks)
 | Suite | Description | L0 | L1 | L2 | Total |
 |-------|------------|----|----|----|-------|
 | `static_distractors` | Cluttered scene manipulation | 5 | 5 | 5 | 15 |
-| `visual_variations` | Visual adaptation | 5 | 5 | 5 | 15 |
 | `dynamic_distractors` | Dynamic scene manipulation | 5 | 5 | 5 | 15 |
 
-### 🎯 Generalization (4 suites, 60 tasks)
+### 🎯 Generalization (3 suites, 45 tasks)
 | Suite | Description | L0 | L1 | L2 | Total |
 |-------|------------|----|----|----|-------|
 | `object_preposition_combinations` | Spatial relationship understanding | 5 | 5 | 5 | 15 |
-| `language_variations` | Language variation robustness | 5 | 5 | 5 | 15 |
 | `task_workflows` | Multi-step task planning | 5 | 5 | 5 | 15 |
 | `unseen_objects` | Unseen object recognition | 5 | 5 | 5 | 15 |
 
-### 📈 Long Horizon (1 suite, 15 tasks)
+### 📈 Long Horizon (1 suite, 20 tasks)
 | Suite | Description | L0 | L1 | L2 | Total |
 |-------|------------|----|----|----|-------|
-| `long_horizon` | Long-horizon task planning | 5 | 5 | 5 | 15 |
+| `long_horizon` | Long-horizon task planning | 10 | 5 | 5 | 20 |
 
 **Difficulty Levels:**
 - **L0**: Basic tasks with clear objectives

@@ -33,7 +33,7 @@ class SmolVLA(Policy):
     def __init__(self, 
                  model_ckpt,
                  device="cuda",
-                 eval_cfgs_path='../../configs/evaluation/smolvla.yaml',
+                 eval_cfgs_path='vla_arena/configs/evaluation/smolvla.yaml',
                  **kwargs):
         """
         Initialize SmolVLA policy.
@@ -106,7 +106,7 @@ class SmolVLA(Policy):
         action = action_tensor.cpu().numpy()[0]
         
         # Process the action (normalize gripper and invert if needed)
-        action = self._process_action(action)
+        # action = self._process_action(action)
         
         return action
     

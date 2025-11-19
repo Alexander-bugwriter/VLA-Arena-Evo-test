@@ -222,7 +222,7 @@ MAX_PATHS_IN_MEMORY = 10    # 内存中同时处理的文件数
 
 ```bash
 # 创建新的conda环境
-conda create -n lerobot_conversion python=3.9
+conda create -n lerobot_conversion python=3.10
 conda activate lerobot_conversion
 
 # 安装依赖包

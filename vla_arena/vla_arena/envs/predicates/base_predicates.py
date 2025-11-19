@@ -144,6 +144,10 @@ class CheckGripperDistance(UnaryAtomic):
     def __call__(self, arg):
         return arg.check_gripper_distance()
     
+class CheckGripperDistancePart(UnaryAtomic):
+    def __call__(self, arg1, arg2):
+        return arg1.check_gripper_distance_part(arg2)
+    
 class InContactPart(UnaryAtomic):
     def __call__(self, arg1, arg2, arg3, arg4):
         return arg1.check_in_contact_part(arg2, arg3, arg4)

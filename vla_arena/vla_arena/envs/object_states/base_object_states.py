@@ -69,6 +69,10 @@ class ObjectState(BaseObjectState):
     def check_gripper_distance(self):
         object_1 = self.env.get_object(self.object_name)
         return self.env.check_gripper_distance(object_1)
+    
+    def check_gripper_distance_part(self,geom_name_1):
+        object_1 = self.env.get_object(self.object_name)
+        return self.env.check_gripper_distance_part(object_1,geom_name_1)
 
     def check_contain(self, other):
         object_1 = self.env.get_object(self.object_name)

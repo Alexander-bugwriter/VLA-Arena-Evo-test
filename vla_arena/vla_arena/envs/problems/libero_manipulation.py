@@ -5,6 +5,7 @@ from vla_arena.vla_arena.envs.robots import *
 from vla_arena.vla_arena.envs.objects import *
 from vla_arena.vla_arena.envs.predicates import *
 from vla_arena.vla_arena.envs.regions import *
+from vla_arena.vla_arena.envs.arenas import AGENTVIEW_CONFIG
 
 
 @register_problem
@@ -1201,17 +1202,20 @@ class Libero_Tabletop_Manipulation(BDDLBaseDomain):
                         1 - self.sim.model.site_rgba[vis_g_id][3]
                     )
 
-    def _setup_camera(self, mujoco_arena):
-        mujoco_arena.set_camera(
-            camera_name="agentview",
-            pos=[0.6586131746834771, 0.0, 1.6103500240372423],
-            quat=[
-                0.6380177736282349,
-                0.3048497438430786,
-                0.30484986305236816,
-                0.6380177736282349,
-            ],
-        )
+    def _setup_camera(self, mujoco_arena, camera_names, camera_configs):
+        for camera in camera_names:
+            if camera == "robot0_eye_in_hand":
+                continue
+            elif camera == "agentview":
+                mujoco_arena.set_camera(
+                    **AGENTVIEW_CONFIG[self.workspace_name],
+                    pos_offset = camera_configs[camera]
+                )
+            else:
+                mujoco_arena.set_camera(
+                    camera_name=camera,
+                    pos_offset=camera_configs[camera]
+                )
 
         # For visualization purpose
         mujoco_arena.set_camera(

@@ -179,6 +179,108 @@ def grab_language_from_bddl_file(bddl_filename, problem_folder, level_dir):
         raise Exception(
             f"Problem does not match problem pattern"
         )
+    
+def grab_language_from_bddl_path(bddl_file_path):
+    domain_name = "robosuite"
+    tokens = scan_tokens(filename=bddl_file_path)
+    if isinstance(tokens, list) and tokens.pop(0) == "define":
+        problem_name = "unknown"
+        objects = {}
+        obj_of_interest = []
+        initial_state = []
+        goal_state = []
+        fixtures = {}
+        regions = {}
+        image_settings={}
+        scene_properties = {}
+        language_instruction = ""
+        cost_state = []
+        moving_objects = []
+        while tokens:
+            group = tokens.pop()
+            t = group[0]
+            if t == "problem":
+                problem_name = group[-1]
+            elif t == ":domain":
+                if domain_name != group[-1]:
+                    raise Exception("Different domain specified in problem file")
+            elif t == ":requirements":
+                pass
+            elif t == ":objects":
+                group.pop(0)
+                object_list = []
+                while group:
+                    if group[0] == "-":
+                        group.pop(0)
+                        objects[group.pop(0)] = object_list
+                        object_list = []
+                    else:
+                        object_list.append(group.pop(0))
+                if object_list:
+                    if not "object" in objects:
+                        objects["object"] = []
+                    objects["object"] += object_list
+            elif t == ":obj_of_interest":
+                group.pop(0)
+                while group:
+                    obj_of_interest.append(group.pop(0))
+            elif t == ":fixtures":
+                group.pop(0)
+                fixture_list = []
+                while group:
+                    if group[0] == "-":
+                        group.pop(0)
+                        fixtures[group.pop(0)] = fixture_list
+                        fixture_list = []
+                    else:
+                        fixture_list.append(group.pop(0))
+                if fixture_list:
+                    if not "fixture" in fixtures:
+                        fixtures["fixture"] = []
+                    fixtures["fixture"] += fixture_list
+            elif t == ":regions":
+                get_regions(t, regions, group)
+            elif t == ":scene_properties":
+                get_scenes(t, scene_properties, group)
+            elif t == ":language":
+                group.pop(0)
+                language_instruction = ' '.join(group)
+                return language_instruction
+            elif t == ":init":
+                group.pop(0)
+                initial_state = group
+            elif t == ":goal":
+                package_predicates(group[1], goal_state, "", "goals")
+            elif t == ":cost":
+                package_predicates(group[1], cost_state, "", "costs")
+            elif t == ":moving_objects":
+                get_moving_objects(t, moving_objects, group)
+            elif t == ":image_settings":
+                group.pop(0)
+                while group:
+                    if group[0].isalpha():
+                        image_settings[group.pop(0)]=float(group.pop(1))
+            else:
+                print(bddl_filename)
+                print("%s is not recognized in problem" % t)
+        return {
+            "problem_name": problem_name,
+            "fixtures": fixtures,
+            "regions": regions,
+            "objects": objects,
+            "scene_properties": scene_properties,
+            "initial_state": initial_state,
+            "goal_state": goal_state,
+            "language_instruction": language_instruction,
+            "obj_of_interest": obj_of_interest,
+            "cost_state": cost_state,
+            "moving_objects": moving_objects,
+            "image_settings": image_settings,
+        }
+    else:
+        raise Exception(
+            f"Problem does not match problem pattern"
+        )
 
 def assign_task_level(task_name, task_index=None):
     """
@@ -211,10 +313,8 @@ vla_arena_suites = [
     # Robustness benchmarks
     "robustness_dynamic_distractors",
     "robustness_static_distractors",
-    "robustness_visual_variations",
     
     # Generalization benchmarks
-    "generalization_language_variations",
     "generalization_object_preposition_combinations",
     "generalization_task_workflows",
     "generalization_unseen_objects",
@@ -243,10 +343,8 @@ suite_to_problem_folder = {
     # Robustness benchmarks
     "robustness_dynamic_distractors": "robustness_dynamic_distractors",
     "robustness_static_distractors": "robustness_static_distractors",
-    "robustness_visual_variations": "robustness_visual_variations",
     
     # Generalization benchmarks
-    "generalization_language_variations": "generalization_language_variations",
     "generalization_object_preposition_combinations": "generalization_object_preposition_combinations",
     "generalization_task_workflows": "generalization_task_workflows",
     "generalization_unseen_objects": "generalization_unseen_objects",
@@ -496,10 +594,8 @@ benchmark_names = [
     # Robustness benchmarks
     "robustness_dynamic_distractors",
     "robustness_static_distractors",
-    "robustness_visual_variations",
     
     # Generalization benchmarks
-    "generalization_language_variations",
     "generalization_object_preposition_combinations",
     "generalization_task_workflows",
     "generalization_unseen_objects",
@@ -535,10 +631,8 @@ if __name__ == "__main__":
         # Robustness benchmarks
         "robustness_dynamic_distractors",
         "robustness_static_distractors",
-        "robustness_visual_variations",
         
         # Generalization benchmarks
-        "generalization_language_variations",
         "generalization_object_preposition_combinations",
         "generalization_task_workflows",
         "generalization_unseen_objects",
