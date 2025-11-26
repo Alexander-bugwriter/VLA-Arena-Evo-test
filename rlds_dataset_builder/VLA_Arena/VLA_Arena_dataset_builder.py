@@ -31,7 +31,10 @@ def _generate_examples(paths) -> Iterator[Tuple[str, Any]]:
             gripper_states = F['data'][f"demo_{demo_id}"]["obs"]["gripper_states"][()]
             joint_states = F['data'][f"demo_{demo_id}"]["obs"]["joint_states"][()]
             images = F['data'][f"demo_{demo_id}"]["obs"][camera_name + "_rgb"][()]
-            wrist_images = F['data'][f"demo_{demo_id}"]["obs"]["robot0_eye_in_hand_rgb"][()]
+            if "robot0_eye_in_hand_rgb" in F['data'][f"demo_{demo_id}"]["obs"].keys():
+                wrist_images = F['data'][f"demo_{demo_id}"]["obs"]["robot0_eye_in_hand_rgb"][()]
+            else:
+                wrist_images = F['data'][f"demo_{demo_id}"]["obs"]["eye_in_hand_rgb"][()]
 
         # compute language instruction
         raw_file_string = os.path.basename(episode_path).split('/')[-1]
