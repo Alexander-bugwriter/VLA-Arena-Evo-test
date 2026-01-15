@@ -13,12 +13,13 @@
 # limitations under the License.
 
 """
-This script demonstrates how to evaluate a pretrained smolVLA policy on the LIBERO benchmark.
+This script demonstrates how to evaluate a pretrained smolVLA policy on the VLA-Arena benchmark.
 """
 
 import json
 import logging
 import math
+import random
 import sys
 import time
 from dataclasses import dataclass, replace
@@ -30,6 +31,7 @@ import draccus
 import imageio
 import numpy as np
 import torch
+from huggingface_hub import hf_hub_download
 from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy
 from lerobot.utils.utils import init_logging
 from tqdm import tqdm
@@ -38,8 +40,8 @@ from vla_arena.vla_arena import benchmark, get_vla_arena_path
 from vla_arena.vla_arena.envs import OffScreenRenderEnv
 
 
-LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
-LIBERO_ENV_RESOLUTION = 256  # resolution used to render training data
+VLA_ARENA_DUMMY_ACTION = [0.0] * 6 + [-1.0]
+VLA_ARENA_ENV_RESOLUTION = 256  # resolution used to render training data
 TIME = datetime.now().strftime('%Y%m%d_%H%M%S')
 DATE = time.strftime('%Y_%m_%d')
 
@@ -47,7 +49,7 @@ DATE = time.strftime('%Y_%m_%d')
 @dataclass
 class Args:
     """
-    Evaluation arguments for smolVLA on LIBERO.
+    Evaluation arguments for SmolVLA on VLA_Arena.
     """
 
     # --- Hugging Face arguments ---
@@ -82,6 +84,87 @@ class Args:
 
     result_json_path: str | None = None
 
+    # --- Instruction Replacement arguments ---
+    use_replacements: bool = True                     # Whether to use instruction replacements
+    replacements_file: str = "VLA-Arena/language_replacements"  # Path to replacements JSON file
+    replacement_probability: float = 1.0              # Probability of applying replacement (0.0 to 1.0)
+    replacement_level: int = 1                        # Level of instruction replacements (from 1 to 4)
+
+def load_replacements_dict(args: Args) -> dict:
+    """Load the replacements dictionary from JSON file."""
+    if not args.use_replacements:
+        return {}
+    try:
+        if args.replacements_file == 'VLA-Arena/language_replacements':
+            filename = f"comprehensive_word_replacements_{args.replacement_level}.json"
+
+            file_path = hf_hub_download(
+                repo_id=args.replacements_file, 
+                filename=filename,
+                repo_type="dataset"
+            )
+
+            with open(file_path, 'r') as f:
+                replacements_list = json.load(f)
+        else:
+            with open(args.replacements_file, 'r') as f:
+                replacements_list = json.load(f)
+
+        replacements_dict = {}
+        for item in replacements_list:
+            original_key = item.get('original')  # original instructions
+            modified_value = item.get('modified')  # replaced instructions
+            if original_key and modified_value:
+                if original_key not in replacements_dict:
+                    replacements_dict[original_key] = []
+                replacements_dict[original_key].append(modified_value)
+        
+        logging.info(f"Loaded {len(replacements_dict)} replacement entries from {args.replacements_file}")
+        return replacements_dict
+        
+    except FileNotFoundError:
+        logging.info(f"Replacements file not found: {args.replacements_file}. Disabling replacements.")
+        return {}
+    except json.JSONDecodeError as e:
+        logging.info(f"Error parsing replacements file: {e}. Disabling replacements.")
+        return {}
+    except Exception as e:
+        logging.info(f"Unexpected error loading replacements: {e}. Disabling replacements.")
+        return {}
+
+def apply_instruction_replacement(original_instruction: str, replacements_dict: dict, args: Args) -> str:
+    """
+    Apply random instruction replacement based on the replacements dictionary.
+    
+    Args:
+        original_instruction: The original instruction string
+        replacements_dict: Dictionary mapping normalized instructions to replacement lists
+        args: Configuration object containing replacement settings
+    
+    Returns:
+        The potentially replaced instruction string
+    """
+    if not args.use_replacements or not replacements_dict:
+        return original_instruction
+    
+    # Check if we should apply replacement based on probability
+    if random.random() > args.replacement_probability:
+        return original_instruction
+    
+    # Convert instruction to key format: spaces to underscores, lowercase
+    instruction_key = original_instruction.lower().replace(" ", "_")
+    
+    # Check if we have replacements for this instruction
+    if instruction_key in replacements_dict:
+        replacement_options = replacements_dict[instruction_key]
+        if replacement_options:
+            # Randomly select one replacement
+            selected_replacement = random.choice(replacement_options)
+            logging.info(f"Replaced instruction: '{original_instruction}' -> '{selected_replacement}'")
+            return selected_replacement.replace("_", " ")
+    
+    # If no replacement found, return original instruction
+    return original_instruction
 
 def eval_vla_arena(args: Args) -> None:
     torch.manual_seed(args.seed)
@@ -105,6 +188,11 @@ def eval_vla_arena(args: Args) -> None:
         )
 
     tasks_payload: list[dict[str, object]] = []
+
+    if args.use_replacements:
+        replacements_dict = load_replacements_dict(args)
+        logging.info(f"Using instruction replacements with probability {args.replacement_probability}")
+        logging.info(f"Loaded {len(replacements_dict)} replacement entries")
 
     for suite_name in suite_names:
         if suite_name not in benchmark_dict:
@@ -133,7 +221,7 @@ def eval_vla_arena(args: Args) -> None:
 
             env, task_description = _get_vla_arena_env(
                 task,
-                LIBERO_ENV_RESOLUTION,
+                VLA_ARENA_ENV_RESOLUTION,
                 args_suite.seed,
                 args_suite.add_noise,
                 args_suite.randomize_color,
@@ -148,6 +236,13 @@ def eval_vla_arena(args: Args) -> None:
                 desc=f'Task {task_id}: {task.language}',
                 leave=False,
             ):
+                if args.use_replacements:
+                    replaced_task_description = apply_instruction_replacement(
+                        task_description, replacements_dict, args
+                    )
+                    logging.info(f"Replace Instruction: {task_description} -> {replaced_task_description}")
+                    task_description = replaced_task_description
+
                 logging.info(f'\nTask: {task_description}')
 
                 env.reset()
@@ -161,7 +256,7 @@ def eval_vla_arena(args: Args) -> None:
                 )
 
                 for _ in range(args_suite.num_steps_wait):
-                    obs, _, _, _ = env.step(LIBERO_DUMMY_ACTION)
+                    obs, _, _, _ = env.step(VLA_ARENA_DUMMY_ACTION)
 
                 t = 0
                 frames = []
@@ -350,7 +445,7 @@ def _get_vla_arena_env(
     adjust_light=False,
     camera_offset=False,
 ):
-    """Initializes and returns the LIBERO environment, along with the task description."""
+    """Initializes and returns the VLA-Arena environment, along with the task description."""
     task_description = task.language
     task_bddl_file = (
         Path(get_vla_arena_path('bddl_files'))

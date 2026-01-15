@@ -11,10 +11,15 @@ video_out_path: "./rollout"
 device: "cuda"
 
 seed: 1000
-result_json_path: default  # Path to save aggregated JSON results (default -> ./results/smolvla_json_<DATE_TIME>.json)
+result_json_path: default                 # Path to save aggregated JSON results (default -> ./results/smolvla_json_<DATE_TIME>.json)
 
 save_video_mode: "first_success_failure"
 add_noise: false
 randomize_color: false
 adjust_light: false
 camera_offset: false
+
+replacements_file: "VLA-Arena/language_replacements"  # Path to replacements JSON file
+use_replacements: false                   # Whether to use instruction replacements
+replacement_probability: 1.0              # Probability of applying replacement (0.0 to 1.0)
+replacement_level: 1                      # Level of instruction replacements (from 1 to 4)

@@ -42,6 +42,7 @@ from vla_arena.models.openvla_oft.experiments.robot.vla_arena.vla_arena_utils im
     save_rollout_video,
 )
 from vla_arena.vla_arena import benchmark
+from vla_arena.vla_arena.utils.utils import apply_instruction_replacement, load_replacements_dict
 
 
 sys.path.append(
@@ -140,6 +141,13 @@ class GenerateConfig:
 
     # fmt: on
 
+    #################################################################################################################
+    # Instruction replacement parameters
+    #################################################################################################################
+    use_replacements: bool = True                     # Whether to use instruction replacements
+    replacements_file: str = "VLA-Arena/language_replacements"  # Path to replacements JSON file
+    replacement_probability: float = 1.0              # Probability of applying replacement (0.0 to 1.0)
+    replacement_level: int = 1                        # Level of instruction replacements (from 1 to 4)
 
 def validate_config(cfg: GenerateConfig) -> None:
     """Validate configuration parameters."""
@@ -332,6 +340,7 @@ def run_episode(
     task_description: str,
     model,
     resize_size,
+    replacements_dict: dict,
     processor=None,
     action_head=None,
     proprio_projector=None,
@@ -371,6 +380,13 @@ def run_episode(
     # Run episode
     success = False
     try:
+        if cfg.use_replacements:
+            replaced_task_description = apply_instruction_replacement(
+                task_description, replacements_dict, cfg, logger
+            )
+            log_message(f"Replace Instruction: {task_description} -> {replaced_task_description}", log_file)
+            task_description = replaced_task_description
+
         while t < max_steps + cfg.num_steps_wait:
             # Do nothing for the first few timesteps to let objects stabilize
             if t < cfg.num_steps_wait:
@@ -437,6 +453,7 @@ def run_task(
     task_level: int,
     model,
     resize_size,
+    replacements_dict: dict,
     processor=None,
     action_head=None,
     proprio_projector=None,
@@ -522,6 +539,7 @@ def run_task(
             task_description,
             model,
             resize_size,
+            replacements_dict,
             processor,
             action_head,
             proprio_projector,
@@ -677,6 +695,11 @@ def main(cfg: GenerateConfig | str | Path):
 
     tasks_payload: list[dict[str, object]] = []
 
+    replacements_dict = load_replacements_dict(cfg, logger)
+    if cfg.use_replacements:
+        log_message(f"Using instruction replacements with probability {cfg.replacement_probability}", log_file)
+        log_message(f"Loaded {len(replacements_dict)} replacement entries", log_file)
+
     for suite_name in suite_names:
         if suite_name not in benchmark_dict:
             raise ValueError(
@@ -717,6 +740,7 @@ def main(cfg: GenerateConfig | str | Path):
                 task_level,
                 model,
                 resize_size,
+                replacements_dict,
                 processor,
                 action_head,
                 proprio_projector,

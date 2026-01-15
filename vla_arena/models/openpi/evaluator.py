@@ -24,6 +24,7 @@ from dataclasses import dataclass, replace
 from typing import Iterable
 
 import imageio
+import json
 import numpy as np
 import tqdm
 import tyro
@@ -33,6 +34,7 @@ from openpi_client import websocket_client_policy as _websocket_client_policy
 
 from vla_arena.vla_arena import benchmark, get_vla_arena_path
 from vla_arena.vla_arena.envs import OffScreenRenderEnv
+from vla_arena.vla_arena.utils.utils import apply_instruction_replacement, load_replacements_dict
 
 
 VLA_ARENA_DUMMY_ACTION = [0.0] * 6 + [-1.0]
@@ -87,6 +89,13 @@ class GenerateConfig:
 
     seed: int = 7  # Random Seed (for reproducibility)
 
+    #################################################################################################################
+    # Instruction replacement parameters
+    #################################################################################################################
+    use_replacements: bool = True                     # Whether to use instruction replacements
+    replacements_file: str = "VLA-Arena/language_replacements"  # Path to replacements JSON file
+    replacement_probability: float = 1.0              # Probability of applying replacement (0.0 to 1.0)
+    replacement_level: int = 1                        # Level of instruction replacements (from 1 to 4)
 
 def check_unnorm_key(cfg: GenerateConfig, model) -> None:
     """Check that the model contains the action un-normalization key."""
@@ -156,6 +165,7 @@ def run_episode(
     cfg: GenerateConfig,
     env,
     task_description: str,
+    replacements_dict: dict,
     initial_state=None,
     log_file=None,
     client=None,
@@ -182,6 +192,13 @@ def run_episode(
     # Run episode
     success = False
     try:
+        if cfg.use_replacements:
+            replaced_task_description = apply_instruction_replacement(
+                task_description, replacements_dict, cfg, logger
+            )
+            log_message(f"Replace Instruction: {task_description} -> {replaced_task_description}", log_file)
+            task_description = replaced_task_description
+
         while t < max_steps + cfg.num_steps_wait:
             # Do nothing for the first few timesteps to let objects stabilize
             if t < cfg.num_steps_wait:
@@ -265,6 +282,7 @@ def run_task(
     task_suite,
     task_id: int,
     task_level: int,
+    replacements_dict: dict,
     total_episodes=0,
     total_successes=0,
     log_file=None,
@@ -320,6 +338,7 @@ def run_task(
             cfg,
             env,
             task_description,
+            replacements_dict,
             initial_state,
             log_file,
             client,
@@ -433,6 +452,11 @@ def eval_vla_arena(cfg: GenerateConfig):
 
     tasks_payload: list[dict[str, object]] = []
 
+    replacements_dict = load_replacements_dict(cfg, logger)
+    if cfg.use_replacements:
+        log_message(f"Using instruction replacements with probability {cfg.replacement_probability}", log_file)
+        log_message(f"Loaded {len(replacements_dict)} replacement entries", log_file)
+
     for suite_name in suite_names:
         if suite_name not in benchmark_dict:
             raise ValueError(
@@ -472,6 +496,7 @@ def eval_vla_arena(cfg: GenerateConfig):
                 task_suite,
                 task_id,
                 task_level,
+                replacements_dict,
                 total_episodes,
                 total_successes,
                 log_file,
