@@ -20,3 +20,6 @@ python vla_arena/vla_arena_client.py
 ```
 
 具体的文件名什么的在vla_arena_client.py文件里改就行了。
+
+这个vla_arena_client和原生的evo1_server是完全对齐的。只需要修改一下evo1_server的端口确保端口对齐就行了。
+接下来考虑训练并且检查一下server就行了。
