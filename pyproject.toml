@@ -37,6 +37,7 @@ dependencies = [
     "h5py",
     "matplotlib",
     "tensorflow",
+    "websockets==15.0.1"
 ]
 
 [project.scripts]

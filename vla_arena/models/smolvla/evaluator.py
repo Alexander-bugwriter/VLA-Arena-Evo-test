@@ -170,7 +170,7 @@ def eval_vla_arena(args: Args) -> None:
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     rng = np.random.default_rng(args.seed)
-
+    print("args.policy_path:",args.policy_path)
     policy = SmolVLAPolicy.from_pretrained(args.policy_path)
     policy.to(args.device)
     policy.eval()
